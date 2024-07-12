@@ -1,11 +1,21 @@
 
-const int buttonPin = 5;  // the number of the pushbutton pin
+#include "HX711.h"
 
-const int motor1Pin = 3;
-const int motor2Pin = 2;
+#define calibration_factor -57280.0 //This value is obtained using the SparkFun_HX711_Calibration sketch
 
-const int hall1Pin = A5;
-const int hall2Pin = A4;
+#define LOADCELL_DOUT_PIN  19
+#define LOADCELL_SCK_PIN  18
+HX711 scale;
+
+#define MOTOR_STOP_WEIGHT_LBS (1.0)
+
+const int scoopButtonPin = 13;  // the number of the pushbutton pin
+
+const int motor1Pin = 14;
+const int motor2Pin = 15;
+
+const int hall1Pin = A2;
+const int hall2Pin = A3;
 const int HALL_SENSOR_LOW_THRESHOLD = 200;
 
 enum OverallState{
@@ -31,8 +41,8 @@ enum MotorState{
 
 ScoopingState scoopingSubstate;
 
-int buttonState;            // the current reading from the input pin
-int lastButtonState = LOW;  // the previous reading from the input pin
+int scoopButtonState;            // the current reading from the input pin
+int lastScoopButtonState = LOW;  // the previous reading from the input pin
 
 unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 50;
@@ -47,27 +57,34 @@ void RunMotor(MotorState motor)
       break;
 
     case BACKWARD:
-      digitalWrite(motor1Pin, LOW);
-      digitalWrite(motor2Pin, HIGH);
+      digitalWrite(motor1Pin, HIGH);
+      digitalWrite(motor2Pin, LOW);
       break;
 
     case FORWARD:
-      digitalWrite(motor1Pin, HIGH);
-      digitalWrite(motor2Pin, LOW);
+      digitalWrite(motor1Pin, LOW);
+      digitalWrite(motor2Pin, HIGH);
       break;
   }
 }
 
 void setup() {
-  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(scoopButtonPin, INPUT_PULLUP);
 
   pinMode(motor1Pin, OUTPUT);
   pinMode(motor2Pin, OUTPUT);
   digitalWrite(motor1Pin, LOW);
   digitalWrite(motor2Pin, LOW);
 
-   Serial.begin(9600); // open the serial port at 9600 bps:
+  
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  scale.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
+  scale.tare();	//Assuming there is no weight on the scale at start up, reset the scale to 0
 
+
+   Serial.begin(9600); // open the serial port at 9600 bps:
+  Serial.print("Nick's Litterbox"); //You can change this to kg but you'll need to refactor the calibration_factor
+    Serial.println();
 }
 
 
@@ -75,24 +92,24 @@ void loop() {
   delay(10);
   
   //Sensor inputs
-  bool buttonPressed = false;
+  bool scoopButtonPressed = false;
   {
     //Button debouncing
-    int reading = digitalRead(buttonPin);
-    if (reading != lastButtonState) {
+    int reading = digitalRead(scoopButtonPin);
+    if (reading != lastScoopButtonState) {
       lastDebounceTime = millis();
     }
 
     if ((millis() - lastDebounceTime) > debounceDelay) {
-      if (reading != buttonState) {
-        buttonState = reading;
-        if (buttonState == LOW) {
-          buttonPressed = true;
-          Serial.print("Button\n");
+      if (reading != scoopButtonState) {
+        scoopButtonState = reading;
+        if (scoopButtonState == LOW) {
+          scoopButtonPressed = true;
+          Serial.print("Scoop Button\n");
         }
       }
     }
-    lastButtonState = reading;
+    lastScoopButtonState = reading;
   }
 
   bool forwardStopTriggered = false, backwardStopTriggered = false;
@@ -101,15 +118,27 @@ void loop() {
     int hall2 = analogRead(hall2Pin);
 
     
-    Serial.print(hall1, DEC);
-    Serial.print("\t");
-    Serial.print(hall2, DEC);
-    Serial.print("\n");
+    //Serial.print(hall1, DEC);
+    //Serial.print("\t");
+    //Serial.print(hall2, DEC);
+    //Serial.print("\n");
 
     forwardStopTriggered = hall2 < HALL_SENSOR_LOW_THRESHOLD;
     backwardStopTriggered = hall1 < HALL_SENSOR_LOW_THRESHOLD;
   }
 
+
+  bool catInBox = false;
+  {
+    float scaleReading = scale.get_units();
+    Serial.print(scaleReading, 5); //scale.get_units() returns a float
+    Serial.print(" lbs"); //You can change this to kg but you'll need to refactor the calibration_factor
+    Serial.println();
+    if(scaleReading > MOTOR_STOP_WEIGHT_LBS)
+    {
+      catInBox = true;
+    }
+  }
 
   //State transitions
   /*if(buttonPressed)
@@ -127,7 +156,7 @@ void loop() {
       break;
     
     case IDLE:
-        if(buttonPressed)
+        if(scoopButtonPressed)
         {
           state = SCOOPING;
         }
@@ -153,28 +182,34 @@ void loop() {
 
 
   //Outputs based on state
- 
-  switch(state)
+  if(catInBox)
   {
-    case STARTUP:
-      RunMotor(FORWARD);
-      break;
+    RunMotor(OFF);
+  }
+  else
+  {
+    switch(state)
+    {
+      case STARTUP:
+        RunMotor(FORWARD);
+        break;
 
-    case IDLE:
-      RunMotor(OFF);
-      break;
+      case IDLE:
+        RunMotor(OFF);
+        break;
 
-    case SCOOPING:
-      switch(scoopingSubstate)
-      {
-        case BACKWARD_MOVE:
-          RunMotor(BACKWARD);
-          break;
-        case FORWARD_MOVE:
-          RunMotor(FORWARD);
-          break;
-      }
-      break;
+      case SCOOPING:
+        switch(scoopingSubstate)
+        {
+          case BACKWARD_MOVE:
+            RunMotor(BACKWARD);
+            break;
+          case FORWARD_MOVE:
+            RunMotor(FORWARD);
+            break;
+        }
+        break;
+    }
   }
 
     
