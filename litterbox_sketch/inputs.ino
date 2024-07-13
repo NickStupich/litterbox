@@ -5,7 +5,8 @@
 #define LOADCELL_DOUT_PIN  19
 #define LOADCELL_SCK_PIN  18
 HX711 scale;
-#define MOTOR_STOP_WEIGHT_LBS (1.0)
+#define MOTOR_STOP_WEIGHT_LBS (2.0)
+#define CAT_DETECTION_WEIGHT_LBS (4.0)
 
 const int hall1Pin = A2;
 const int hall2Pin = A3;
@@ -116,10 +117,10 @@ InputsState GetInputsState() {
   Serial.print(" lbs"); //You can change this to kg but you'll need to refactor the calibration_factor
   Serial.println();
   */
-  bool catInBox = scaleReading > MOTOR_STOP_WEIGHT_LBS;
+  bool motorStopFlag = scaleReading > MOTOR_STOP_WEIGHT_LBS;
+  bool catInBoxFlag = scaleReading > CAT_DETECTION_WEIGHT_LBS;
 
-
-  InputsState result = {scoopButtonPressed, flattenButtonPressed, catInBox, forwardStopTriggered, backwardStopTriggered};
+  InputsState result = {scoopButtonPressed, flattenButtonPressed, resetButtonPressed, motorStopFlag, catInBoxFlag, forwardStopTriggered, backwardStopTriggered, scaleReading};
 
   return result;
 }

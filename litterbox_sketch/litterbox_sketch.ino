@@ -13,6 +13,7 @@ enum FlatteningState{
 };
 
 enum ScoopingState{
+  SCOOP_WAIT_FOR_CAT,
   SCOOP_BACKWARD_MOVE,
   SCOOP_PAUSE,
   SCOOP_FORWARD_MOVE,
@@ -27,9 +28,12 @@ enum MotorState{
 struct InputsState{
   bool scoopButtonPressed;
   bool flattenButtonPressed;
-  bool catInBox;
+  bool resetButtonPressed;
+  bool motorStopFlag;
+  bool catInBoxFlag;
   bool forwardStopTriggered;
   bool backwardStopTriggered;
+  float scaleReading;
 };
 
 struct LitterboxState{
@@ -42,6 +46,8 @@ struct LitterboxState{
   unsigned long flatteningTimerStartTime;
   
   int scoopCounter = 0;
+  unsigned long catEnteredBoxTime;
+  bool catInBoxFlag;  
 };
 
 LitterboxState lbState;

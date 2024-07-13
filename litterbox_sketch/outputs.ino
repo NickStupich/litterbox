@@ -65,7 +65,7 @@ void OutputLEDCounters(int scoopCounter) {
 //Outputs based on state
 void SetOutputs(LitterboxState lbState, InputsState is)
 {  
-  if(is.catInBox)
+  if(is.catInBoxFlag)
   {
     RunMotor(OFF);
   }
