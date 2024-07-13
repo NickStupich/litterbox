@@ -84,14 +84,30 @@ void SetOutputs(LitterboxState lbState, InputsState is)
       case SCOOPING:
         switch(lbState.scoopingSubstate)
         {
-          case BACKWARD_MOVE:
+          case SCOOP_BACKWARD_MOVE:
             RunMotor(BACKWARD);
             break;
-          case FORWARD_MOVE:
+          case SCOOP_FORWARD_MOVE:
             RunMotor(FORWARD);
+            break;
+          case SCOOP_PAUSE:
+            RunMotor(OFF);
             break;
         }
         break;
+      case FLATTENING:
+        switch(lbState.flatteningSubstate)
+        {
+          case FLATTEN_FORWARD_MOVE:
+            RunMotor(FORWARD);
+            break;
+          case FLATTEN_PAUSE:
+            RunMotor(OFF);
+            break;
+          case FLATTEN_BACKWARD_MOVE:
+            RunMotor(BACKWARD);
+            break;
+        }
     }
   }
 

@@ -109,19 +109,15 @@ InputsState GetInputsState() {
   
 
 
-  bool catInBox = false;
-  {
-    float scaleReading = scale.get_units();
-    /*
-    Serial.print(scaleReading, 5); //scale.get_units() returns a float
-    Serial.print(" lbs"); //You can change this to kg but you'll need to refactor the calibration_factor
-    Serial.println();
-    */
-    if(scaleReading > MOTOR_STOP_WEIGHT_LBS)
-    {
-      catInBox = true;
-    }
-  }
+  
+  float scaleReading = scale.get_units();
+  /*
+  Serial.print(scaleReading, 5); //scale.get_units() returns a float
+  Serial.print(" lbs"); //You can change this to kg but you'll need to refactor the calibration_factor
+  Serial.println();
+  */
+  bool catInBox = scaleReading > MOTOR_STOP_WEIGHT_LBS;
+
 
   InputsState result = {scoopButtonPressed, flattenButtonPressed, catInBox, forwardStopTriggered, backwardStopTriggered};
 
